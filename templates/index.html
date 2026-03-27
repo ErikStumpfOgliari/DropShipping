@@ -1,297 +1,41 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Logistics Pro v3.0 Elite - Terminal Ativo</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.1/socket.io.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-deep: #0b1120;
-            --bg-card: #1e293b;
-            --bg-panel: #0f172a;
-            --accent: #f59e0b;
-            --success: #10b981;
-            --info: #3b82f6;
-            --text-main: #f1f5f9;
-            --text-muted: #64748b;
-            --border: #334155;
-        }
-
-        * { box-sizing: border-box; }
-
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--bg-deep); 
-            color: var(--text-main); 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            overflow: hidden; 
-        }
-
-        header { 
-            background: var(--bg-card); 
-            padding: 10px 30px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border-bottom: 2px solid var(--accent);
-            z-index: 1000;
-            flex-shrink: 0;
-        }
-
-        .status-badge {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 700;
-            border: 1px solid var(--success);
-        }
-
-        .dashboard { 
-            display: flex; 
-            flex: 1; 
-            gap: 15px; 
-            padding: 15px;
-            overflow: hidden; 
-        }
-
-        .sidebar { 
-            width: 300px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-            flex-shrink: 0; 
-        }
-
-        .card {
-            background: var(--bg-panel);
-            border-radius: 8px;
-            padding: 15px;
-            border: 1px solid var(--border);
-        }
-
-        .card h3 { margin: 0 0 12px 0; font-size: 13px; text-transform: uppercase; color: var(--accent); }
-
-        input, select { 
-            width: 100%; padding: 10px; margin-bottom: 8px; 
-            background: rgba(0,0,0,0.2); border: 1px solid var(--border); 
-            border-radius: 6px; color: white; outline: none; font-size: 13px;
-        }
-        input:focus { border-color: var(--accent); }
-
-        .stat-item { text-align: center; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 6px; }
-        .stat-value { font-size: 18px; font-weight: 800; display: block; }
-        .stat-label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; }
-
-        #logistics-map { height: 100px; background: #000; border-radius: 6px; position: relative; border: 1px solid var(--border); margin-top: 10px; }
-        .map-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #555; }
-        .map-dot.active { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-
-        .operations-hub { flex: 1; display: flex; flex-direction: column; background: var(--bg-panel); border-radius: 10px; border: 1px solid var(--border); overflow: hidden; }
-
-        #terminal { 
-            flex: 1; padding: 20px; overflow-y: auto; 
-            display: flex; flex-direction: column; gap: 12px;
-            background-image: linear-gradient(rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.95)), url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
-            font-family: 'Roboto Mono', monospace; 
-        }
-
-        .manifest-card { padding: 12px; border-radius: 6px; max-width: 70%; font-size: 13px; background: var(--bg-card); border-left: 3px solid transparent; position: relative; }
-        .manifest-card.received { align-self: flex-start; border-left-color: var(--info); }
-        .manifest-card.sent { align-self: flex-end; border-left-color: var(--success); }
-
-        .manifest-header { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 6px; }
-
-        .dispatch-bar { padding: 15px 20px; background: var(--bg-card); display: flex; gap: 10px; border-top: 1px solid var(--border); flex-shrink: 0; }
-        .dispatch-bar input { margin: 0; border-radius: 30px; font-size: 14px; padding-left: 20px; flex: 1; }
-        .btn-dispatch { background: var(--accent); color: #000; border: none; padding: 0 30px; border-radius: 30px; font-weight: 800; text-transform: uppercase; cursor: pointer; }
-
-        .logs-panel { height: 80px; background: #000; border-top: 1px solid var(--border); padding: 10px; overflow-y: auto; font-family: 'Roboto Mono', monospace; font-size: 10px; color: #444; flex-shrink: 0; }
-
-        /* =========================================
-           NOVA ANIMAÇÃO ELITE v4.0
-           ========================================= */
-        #cargo-plane { 
-            position: fixed; 
-            top: -200px; 
-            left: 20%; 
-            font-size: 80px; 
-            z-index: 10000; 
-            pointer-events: none;
-            transition: opacity 0.5s;
-            opacity: 0; 
-            filter: drop-shadow(0 20px 40px rgba(0,0,0,0.6));
-        }
-
-        .animate-flight { 
-            opacity: 1 !important; 
-            animation: flightPath 3.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; 
-        }
-
-        @keyframes flightPath {
-            0% { 
-                top: -200px; left: -15%; 
-                transform: rotate(25deg) scale(0.5);
-            }
-            15% {
-                top: 40%; left: 10%; 
-                transform: rotate(15deg) scale(0.9);
-            }
-            35% { 
-                top: 35%; left: 25%; 
-                transform: rotate(0deg) scale(1.1); 
-            }
-            65% { 
-                top: 35%; left: 70%; 
-                transform: rotate(0deg) scale(1.1);
-            }
-            85% {
-                top: 40%; left: 90%; 
-                transform: rotate(-15deg) scale(0.9);
-            }
-            100% { 
-                top: 35%; left: 120vw; 
-                transform: rotate(-25deg) scale(0.5);
-            }
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logística P2P - Terminal de Despacho</title>
 </head>
-<body>
+<body style="font-family: 'Courier New', Courier, monospace; background-color: #f4f4f4; text-align: center; padding: 50px;">
 
-    <header>
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <span style="font-size: 20px;">📦</span>
-            <div>
-                <strong style="display: block; letter-spacing: 1px; font-size: 14px;">LOGISTICS PRO v3.0 ELITE</strong>
-                <small style="color: var(--text-muted); font-size: 11px;">Terminal: {{ ip }}</small>
-            </div>
-        </div>
-        <div class="status-badge">● SISTEMA OPERACIONAL</div>
-    </header>
+    <div style="background-color: white; display: inline-block; padding: 30px; border: 2px solid #333; box-shadow: 10px 10px 0px #888;">
+        <h2>📦 SISTEMA DE LOGÍSTICA P2P</h2>
+        <p>Comunicação via Protocolo UDP</p>
+        <hr>
 
-    <div id="cargo-plane">✈️</div>
+        <form method="post" style="text-align: left;">
+            <label><b>IP do Destinatário (Ex: 192.168.0.100):</b></label><br>
+            <input type="text" name="ip" placeholder="0.0.0.0" style="width: 100%; padding: 8px; margin-top: 5px;" required>
+            <br><br>
 
-    <div class="dashboard">
-        <aside class="sidebar">
-            <div class="card">
-                <h3>Monitor de Carga</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div class="stat-item">
-                        <span class="stat-value" id="count-sent" style="color: var(--success)">0</span>
-                        <span class="stat-label">Enviados</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value" id="count-received" style="color: var(--info)">0</span>
-                        <span class="stat-label">Recebidos</span>
-                    </div>
-                </div>
-            </div>
+            <label><b>Descrição da Carga:</b></label><br>
+            <textarea name="mensagem" placeholder="Descreva o produto..." style="width: 100%; height: 60px; margin-top: 5px;" required></textarea>
+            <br><br>
 
-            <div class="card">
-                <h3>Configurar Rota</h3>
-                <input type="text" id="dest-ip" placeholder="IP Destino" value="127.0.0.1">
-                <input type="text" id="dest-nome" placeholder="Responsável" value="Erik">
-                <select id="priority">
-                    <option>Prioridade: Normal</option>
-                    <option>Prioridade: Flash</option>
-                </select>
-            </div>
+            <button type="submit" formaction="/enviar" style="width: 100%; padding: 12px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-weight: bold;">
+                🚀 DESPACHAR CARGA ORIGINAL
+            </button>
 
-            <div class="card">
-                <h3>Mapa Logístico</h3>
-                <div id="logistics-map">
-                    <div class="map-dot active" style="top: 20%; left: 20%"></div>
-                    <div class="map-dot" style="top: 70%; left: 80%"></div>
-                </div>
-            </div>
-        </aside>
+            <br><br>
 
-        <main class="operations-hub">
-            <div id="terminal"></div>
-            <div class="dispatch-bar">
-                <input type="text" id="msg-input" placeholder="Descreva a carga para despacho..." autocomplete="off">
-                <button class="btn-dispatch" onclick="enviar()">Despachar</button>
-            </div>
-            <div id="logs" class="logs-panel"></div>
-        </main>
+            <button type="submit" formaction="/remanejar" style="width: 100%; padding: 12px; background-color: #FFC107; color: black; border: none; cursor: pointer; font-weight: bold;">
+                🔄 REMANEJAR CARGA (REPASSAR)
+            </button>
+        </form>
+
+        <p style="font-size: 12px; color: #666; margin-top: 20px;">
+            <i>Nota: O status do envio e o avião ASCII aparecem no terminal do VS Code.</i>
+        </p>
     </div>
 
-<script>
-    const socket = io();
-    let sCount = 0, rCount = 0;
-
-    window.onload = () => {
-        document.getElementById('msg-input').focus();
-        log("Terminal operacional iniciado.");
-    }
-
-    socket.on('chegou_mensagem', (msg) => {
-        animar();
-        rCount++;
-        document.getElementById('count-received').innerText = rCount;
-        renderCard(msg, 'received');
-        log(`Remessa recebida de ${msg.remetente_nome}`);
-    });
-
-    function enviar() {
-        const ip = document.getElementById('dest-ip').value.trim();
-        const msg = document.getElementById('msg-input').value.trim();
-        if(!ip || !msg) return;
-
-        animar();
-        sCount++;
-        document.getElementById('count-sent').innerText = sCount;
-
-        socket.emit('comando_enviar', { 
-            ip_destino: ip, porta_destino: 5000, 
-            nome_destino: document.getElementById('dest-nome').value, 
-            texto_mensagem: msg 
-        });
-
-        renderCard({ remetente_nome: 'Você', conteudo: msg }, 'sent');
-        log(`Despacho para ${ip} concluído.`);
-        document.getElementById('msg-input').value = '';
-        document.getElementById('msg-input').focus();
-    }
-
-    function renderCard(msg, type) {
-        const term = document.getElementById('terminal');
-        const div = document.createElement('div');
-        div.className = `manifest-card ${type}`;
-        div.innerHTML = `
-            <div class="manifest-header">
-                <span>#${Math.floor(Math.random()*9000)+1000}</span>
-                <span>${new Date().toLocaleTimeString()}</span>
-            </div>
-            ${msg.status_encaminhamento ? '<span style="color:var(--accent);font-size:10px;font-weight:bold;">🔄 REMANEJADO</span><br>' : ''}
-            <strong>${msg.remetente_nome}:</strong> ${msg.conteudo}
-        `;
-        term.appendChild(div);
-        term.scrollTop = term.scrollHeight;
-    }
-
-    function log(t) {
-        const l = document.getElementById('logs');
-        const e = document.createElement('div');
-        e.innerText = `[${new Date().toLocaleTimeString()}] ${t}`;
-        l.appendChild(e); l.scrollTop = l.scrollHeight;
-    }
-
-    function animar() {
-        const p = document.getElementById('cargo-plane');
-        p.classList.remove('animate-flight');
-        void p.offsetWidth;
-        p.classList.add('animate-flight');
-    }
-
-    document.getElementById('msg-input').addEventListener('keypress', (e) => {
-        if(e.key === 'Enter') enviar();
-    });
-</script>
 </body>
 </html>
